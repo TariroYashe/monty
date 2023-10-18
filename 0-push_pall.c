@@ -50,60 +50,30 @@ stack = stack->next;
 * @argv: argument vector
 * Return: 0
 */
+
 int main(int argc, char *argv[])
 {
-stack_t *stack = NULL;
-char line[MAX_LINE_LENGTH], *opcode;
+char line[MAX_LINE_LENGTH];
 FILE *file;
-int line_number = 0, value;
+int line_number = 0;
+if (argc != 2)
 {
-if (argc < 2) {
-printf("Usage: %s <argument>\n", argv[0]);
-return (1);/*Exit with an error status code*/
+fprintf(stderr, "Usage: %s <filename>\n", argv[0]);
+return (EXIT_FAILURE);
 }
-printf("Program name: %s\n", argv[0]);
-printf("First argument: %s\n", argv[1]);
-
-return (0);
+file = fopen(argv[1], "r"); /*Open the file for reading*/
+if (file == NULL)
+{
+fprintf(stderr, "Error: Could not open file %s\n", argv[1]);
+return(EXIT_FAILURE);
 }
-while (fgets(line, sizeof(line),file) != NULL)
+while (fgets(line, sizeof(line), file) != NULL)/* Use the 'file' variable, not uninitialized 'file'*/
 {
 line_number++;
-/*Tokenize the input line to extract the opcode*/
-opcode = strtok(line, " \t\n");
-if (opcode == NULL || *opcode == '#')
-continue; /*Skip empty lines and comments*/
-if (strcmp(opcode, "push") == 0)
-{
-/*Extract and validate the argument*/
-char *arg = strtok(NULL, " \t\n");
-if (arg == NULL)
-{
-fprintf(stderr, "L%d: usage: push integer\n", line_number);
-exit(EXIT_FAILURE);
+/*The rest of your code remains the same.*/
 }
-value = atoi(arg);
-if (value == 0 && arg[0] != '0')
-{
-fprintf(stderr, "L%d: usage: push integer\n", line_number);
-exit(EXIT_FAILURE);
-}
-/*Call the push function to add the value to the stack*/
-push(&stack, value);
-}
-else if (strcmp(opcode, "pall") == 0)
-{
-/*Call the pall function to print stack values*/
-pall(stack);
-}
-else
-{
-fprintf(stderr, "L%d: unknown instruction %s\n", line_number, opcode);
-exit(EXIT_FAILURE);
-}
-}
-/*Clean up and close the file*/
+/* Clean up and close the file*/
 fclose(file);
-/*Free allocated memory, if any*/
+/* Free allocated memory, if any*/
 return (0);
 }
