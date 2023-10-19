@@ -1,6 +1,7 @@
 #ifndef MONTY_H
 #define MONTY_H
 #define MAX_LINE_LENGTH 1024
+#define STACKSIZE 1024
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -37,8 +38,11 @@ typedef struct instruction_s
 } instruction_t;
 
 /*function prototypes below*/
-void push(stack_t **stack, int value);
-void pall(stack_t *stack);
 int main(int argc, char *argv[]);
+stack_t *create_stack(void);
+void push(stack_t **stack, unsigned int line_number, char *arg);
+void pall(stack_t **stack, unsigned int line_number, char *arg);
+void execute_instruction(const char *instruction, stack_t **stack, unsigned int line_number, char *arg);
+void free_stack(stack_t *stack);
 
 #endif
