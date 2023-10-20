@@ -29,5 +29,7 @@ void pall(stack_t **stack);
 int main(int argc, char *argv[]);
 int is_integer(const char *str);
 int custom_getline(char **line, size_t *len, FILE *stream);
+void free_stack(stack_t *stack);
+
 
 #endif
