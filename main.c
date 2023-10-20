@@ -50,6 +50,11 @@ else if (strcmp(opcode, "pint") == 0)
     pint(&stack, line_number);
 }
 
+else if (strcmp(opcode, "pop") == 0)
+{
+    pop(&stack, line_number);
+}
+
 /* Add more opcode cases here as needed*/
 else
 {
