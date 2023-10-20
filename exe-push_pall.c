@@ -1,44 +1,57 @@
 #include "monty.h"
 
 /**
-* create_stack - Create a new stack.
-* Return: A pointer to the newly created stack.
+* is_integer - Check if a string is an integer
+* @str: The string to check
+*
+* Return: 1 if the string is an integer, 0 otherwise
 */
-stack_t *create_stack(void)
+int is_integer(const char *str)
 {
-stack_t *stack = NULL;
-return (stack);
+int i;
+if (str == NULL || *str == '\0')
+return (0);
+
+i = 0;
+if (str[i] == '-' || str[i] == '+')
+i++;
+
+for (; str[i] != '\0'; i++)
+{
+if (!isdigit(str[i]))
+return (0);
+}
+
+return (1);
 }
 
 /**
-* push - Push a new element onto the stack.
-* @stack: A pointer to the stack.
-* @line_number: The current line number.
-* @arg: The argument to push.
+* push - Implementation of the push opcode
+* @stack: A pointer to the stack
+* @line_number: The current line number in the file
 */
-void push(stack_t **stack, unsigned int line_number, char *arg)
+void push(stack_t **stack, unsigned int line_number)
 {
-int value;
 stack_t *new_node;
-if (arg == NULL)
+char *arg;
+/* Parse the line to get the integer argument */
+arg = strtok(NULL, " \t\n");
+if (arg == NULL || !is_integer(arg))
 {
-fprintf(stderr, "L%d: missing argument for push\n", line_number);
-exit(EXIT_FAILURE);
-}
-value = strtol(arg, NULL, 10);
-if (value == 0 && *arg != '0')
-{
-fprintf(stderr, "L%d: invalid argument for push: %s\n", line_number, arg);
+fprintf(stderr, "L%u: usage: push integer\n", line_number);
 exit(EXIT_FAILURE);
 }
 
+/* Allocate memory for a new stack node */
 new_node = malloc(sizeof(stack_t));
 if (new_node == NULL)
 {
 fprintf(stderr, "Error: malloc failed\n");
 exit(EXIT_FAILURE);
 }
-new_node->n = value;
+
+/* Initialize the new node and push it onto the stack */
+new_node->n = atoi(arg);
 new_node->prev = NULL;
 new_node->next = *stack;
 if (*stack)
@@ -47,17 +60,14 @@ if (*stack)
 }
 
 /**
-* pall - Print all the elements of the stack.
-* @stack: A pointer to the stack.
-* @line_number: The current line number.
-* @arg: An argument (not used in this function).
+* pall - Implementation of the pall opcode
+* @stack: A pointer to the stack
+* @line_number: The current line number in the file
 */
-void pall(stack_t **stack, char *arg)
+void pall(stack_t **stack)
 {
 stack_t *current = *stack;
-(void)arg; // Unused parameter
-
-while (current)
+while (current != NULL)
 {
 printf("%d\n", current->n);
 current = current->next;
@@ -65,82 +75,104 @@ current = current->next;
 }
 
 /**
-* free_stack - Free all memory associated with the stack.
-* @stack: A pointer to the stack to free.
+* custom_getline - Custom implementation of getline
+* @line: A pointer to the buffer where the line will be stored
+* @len: A pointer to the size of the buffer
+* @stream: The input stream to read from
+*
+* Description:
+* - Reads a line from the input stream and stores it in the provided buffer.
+* - Automatically resizes the buffer as needed to accommodate longer lines.
+*
+* Return:
+* - The number of characters read, or -1 if an error occurs.
 */
-void free_stack(stack_t *stack)
+int custom_getline(char **line, size_t *len, FILE *stream)
 {
-while (stack)
+int ch;
+size_t pos = 0;
+if (!*line)
 {
-stack_t *temp = stack;
-stack = stack->next;
-free(temp);
+*line = malloc(128);
+if (!*line)
+return (-1);
+*len = 128;
 }
+while ((ch = getc(stream)) != EOF && ch != '\n')
+{
+(*line)[pos++] = ch;
+if (pos + 1 >= *len)
+{
+size_t new_size = *len * 2;
+char *new_line = realloc(*line, new_size);
+if (!new_line)
+return (-1);
+*line = new_line;
+*len = new_size;
+}
+}
+if (ch == EOF && pos == 0)
+{
+free(*line);
+return (-1);
+}
+(*line)[pos] = '\0';
+return (pos);
 }
 
 /**
-* execute_instruction - Execute a Monty bytecode instruction.
-* @instruction: The instruction to execute.
-* @stack: A pointer to the stack.
-* @line_number: The current line number.
-* @arg: An argument for the opcode (push value).
-*/
-void execute_instruction(const char *instruction,
-stack_t **stack, unsigned int line_number, char *arg)
-{
-if (strcmp(instruction, "push") == 0)
-{
-push(stack, line_number, arg);
-}
-else if (strcmp(instruction, "pall") == 0)
-{
-pall(stack, line_number, arg);
-}
-else
-{
-fprintf(stderr, "L%d: unknown instruction %s\n", line_number, instruction);
-exit(EXIT_FAILURE);
-}
-}
-
-/**
-* main - The entry point of the Monty ByteCode interpreter.
-* @argc: The number of command-line arguments.
-* @argv: An array of command-line argument strings.
-* Return: (EXIT_SUCCESS) on success, (EXIT_FAILURE) on failure.
+* main - Monty ByteCodes interpreter main function
+* @argc: The number of command-line arguments
+* @argv: An array of command-line arguments
+*
+* Description:
+* - Checks command-line arguments and opens the Monty ByteCode file.
+* - Reads and interprets the file line by line, executing valid opcodes.
+*
+* Return: 0 on success, EXIT_FAILURE on error.
 */
 int main(int argc, char *argv[])
 {
+char *opcode;
+stack_t *stack;
+char *line = NULL;
+size_t len = 0;
+unsigned int line_number = 0;
+FILE *file;
 if (argc != 2)
 {
 fprintf(stderr, "USAGE: monty file\n");
 exit(EXIT_FAILURE);
 }
 
-FILE *file = fopen(argv[1], "r");
+file = fopen(argv[1], "r");
 if (file == NULL)
 {
 fprintf(stderr, "Error: Can't open file %s\n", argv[1]);
 exit(EXIT_FAILURE);
 }
-
-char line[100]; /* Adjust the buffer size as needed */
-unsigned int line_number = 0;
-stack_t *stack = create_stack();
-
-while (fgets(line, sizeof(line), file) != NULL)
+while (custom_getline(&line, &len, file) != -1)
 {
 line_number++;
-char *token = strtok(line, " \t\n");
-char *arg = strtok(NULL, " \t\n"); /* Get the argument token */
-
-if (token != NULL)
+opcode = strtok(line, " \t\n");
+if (opcode == NULL || opcode[0] == '#')
+continue;  /*Skip empty lines and comments*/
+if (strcmp(opcode, "push") == 0)
 {
-execute_instruction(token, &stack, line_number, arg);
+push(&stack, line_number);
+}
+else if (strcmp(opcode, "pall") == 0)
+{
+pall(&stack);
+}
+/* Add more opcode cases here as needed*/
+else
+{
+fprintf(stderr, "L%u: unknown instruction %s\n", line_number, opcode);
+exit(EXIT_FAILURE);
 }
 }
-
 fclose(file);
-free_stack(stack);
-return (EXIT_SUCCESS);
+free(line);
+return (0);
 }
