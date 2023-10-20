@@ -29,6 +29,6 @@ void pall(stack_t **stack);
 int main(int argc, char *argv[]);
 int is_integer(const char *str);
 int custom_getline(char **line, size_t *len, FILE *stream);
-
+void pint(stack_t **stack, unsigned int line_number);
 
 #endif
